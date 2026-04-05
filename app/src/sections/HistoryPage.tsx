@@ -54,7 +54,7 @@ export function HistoryPage({ history, program, onBack }: HistoryPageProps) {
       .reverse();
   };
 
-  const benchData = getChartData('Bench Press');
+  const benchData = getChartData('BENCH PRESS');
 
   return (
     <div className="min-h-screen bg-[#0F0F0F] flex flex-col text-white">
