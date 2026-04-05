@@ -245,12 +245,17 @@ export function WorkoutPage({ day, onFinish, onBack }: WorkoutPageProps) {
           </div>
         )}
 
-        {/* SETİ TAMAMLA BUTONU */}
-        {getNextSet() && !isResting && !waitingForRestSelection && (
-          <Button onClick={completeSet} className="max-w-md mx-auto w-full h-16 bg-[#10B981] hover:bg-[#059669] rounded-2xl text-xl font-black uppercase">
-            SETİ TAMAMLA
-          </Button>
-        )}
+       {/* SETİ TAMAMLA BUTONU - MERKEZLENMİŞ HALİ */}
+{getNextSet() && !isResting && !waitingForRestSelection && (
+  <div className="max-w-md mx-auto w-full flex justify-center mt-4">
+    <Button 
+      onClick={completeSet} 
+      className="w-full h-16 bg-[#10B981] hover:bg-[#059669] rounded-2xl text-xl font-black uppercase shadow-lg shadow-[#10B981]/20 transition-transform active:scale-95"
+    >
+      SETİ TAMAMLA
+    </Button>
+  </div>
+)}
       </main>
 
       {/* ALT MENÜ - SADECE HAREKETLER ARASI GEÇİŞ */}
