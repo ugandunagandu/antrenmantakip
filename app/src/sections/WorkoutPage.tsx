@@ -253,17 +253,44 @@ export function WorkoutPage({ day, onFinish, onBack }: WorkoutPageProps) {
           ) : (
             <div />
           )}
-          <Button 
-            onClick={() => onFinish({ 
-              dayId: day.id, 
-              startTime: Date.now() - elapsedTime * 1000, 
-              endTime: Date.now(), 
-              exercises: exerciseProgress 
-            })} 
-            className="h-12 rounded-xl bg-red-600 hover:bg-red-700 font-bold uppercase tracking-tight"
-          >
-            ANTRENMANI BİTİR
-          </Button>
+          // WorkoutPage.tsx içindeki onFinish'in tetiklendiği butonu bul ve şu mantığı uygula:
+
+<Button 
+  onClick={() => {
+    const endTime = Date.now();
+    const startTime = Date.now() - elapsedTime * 1000;
+
+    // BAŞARI (STATS) KONTROLÜ
+    const achievements = exerciseProgress.map(prog => {
+      const exercise = day.exercises.find(ex => ex.id === prog.exerciseId);
+      const lastSet = prog.sets[prog.sets.length - 1]; // Son set
+      
+      // Eğer son set yapıldıysa ve tekrar sayısı hedef tekrara eşit veya fazlaysa
+      const isSuccess = lastSet.completed && (lastSet.lastRep || 0) >= (exercise?.reps || 0);
+
+      if (isSuccess) {
+        return {
+          exerciseName: exercise?.name,
+          weight: lastSet.weight,
+          reps: lastSet.lastRep,
+          date: new Date().toLocaleDateString('tr-TR')
+        };
+      }
+      return null;
+    }).filter(item => item !== null);
+
+    onFinish({ 
+      dayId: day.id, 
+      startTime, 
+      endTime, 
+      exercises: exerciseProgress,
+      achievements // Bu veriyi ana bileşene gönderiyoruz
+    });
+  }} 
+  className="h-12 rounded-xl bg-red-600 hover:bg-red-700 font-bold uppercase"
+>
+  ANTRENMANI BİTİR
+</Button>
         </div>
       </footer>
     </div>
