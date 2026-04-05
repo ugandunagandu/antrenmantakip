@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { 
   ChevronLeft, 
   Check, 
@@ -136,6 +136,18 @@ export function WorkoutPage({ day, onFinish, onBack }: WorkoutPageProps) {
     });
   };
 
+  const handleFinish = () => {
+    const endTime = Date.now();
+    const startTime = Date.now() - elapsedTime * 1000;
+
+    onFinish({ 
+      dayId: day.id, 
+      startTime, 
+      endTime, 
+      exercises: exerciseProgress
+    });
+  };
+
   return (
     <div className="min-h-screen bg-[#0F0F0F] flex flex-col text-white">
       <header className="px-4 py-4 border-b border-[#2A2A2A] flex items-center justify-between sticky top-0 bg-[#0F0F0F]/80 backdrop-blur-md z-10">
@@ -247,50 +259,23 @@ export function WorkoutPage({ day, onFinish, onBack }: WorkoutPageProps) {
       </main>
 
       <footer className="fixed bottom-0 left-0 right-0 p-4 bg-[#0F0F0F]/90 backdrop-blur-lg border-t border-[#2A2A2A] z-20">
-        <div className="max-w-md mx-auto grid grid-cols-2 gap-3">
+        <div className="max-w-md mx-auto flex gap-3">
           {currentExerciseIndex < day.exercises.length - 1 ? (
-            <Button variant="outline" onClick={() => setCurrentExerciseIndex(prev => prev + 1)} className="h-12 rounded-xl border-[#2A2A2A] font-bold">SONRAKİ HAREKET</Button>
+            <Button 
+              variant="outline" 
+              onClick={() => setCurrentExerciseIndex(prev => prev + 1)} 
+              className="flex-1 h-12 rounded-xl border-[#2A2A2A] font-bold"
+            >
+              SONRAKİ HAREKET
+            </Button>
           ) : (
-            <div />
+            <Button 
+              onClick={handleFinish}
+              className="flex-1 h-12 rounded-xl bg-red-600 hover:bg-red-700 font-bold uppercase"
+            >
+              ANTRENMANI BİTİR
+            </Button>
           )}
-          // WorkoutPage.tsx içindeki onFinish'in tetiklendiği butonu bul ve şu mantığı uygula:
-
-<Button 
-  onClick={() => {
-    const endTime = Date.now();
-    const startTime = Date.now() - elapsedTime * 1000;
-
-    // BAŞARI (STATS) KONTROLÜ
-    const achievements = exerciseProgress.map(prog => {
-      const exercise = day.exercises.find(ex => ex.id === prog.exerciseId);
-      const lastSet = prog.sets[prog.sets.length - 1]; // Son set
-      
-      // Eğer son set yapıldıysa ve tekrar sayısı hedef tekrara eşit veya fazlaysa
-      const isSuccess = lastSet.completed && (lastSet.lastRep || 0) >= (exercise?.reps || 0);
-
-      if (isSuccess) {
-        return {
-          exerciseName: exercise?.name,
-          weight: lastSet.weight,
-          reps: lastSet.lastRep,
-          date: new Date().toLocaleDateString('tr-TR')
-        };
-      }
-      return null;
-    }).filter(item => item !== null);
-
-    onFinish({ 
-      dayId: day.id, 
-      startTime, 
-      endTime, 
-      exercises: exerciseProgress,
-      achievements // Bu veriyi ana bileşene gönderiyoruz
-    });
-  }} 
-  className="h-12 rounded-xl bg-red-600 hover:bg-red-700 font-bold uppercase"
->
-  ANTRENMANI BİTİR
-</Button>
         </div>
       </footer>
     </div>
