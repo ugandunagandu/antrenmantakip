@@ -8,42 +8,45 @@ import type { WorkoutSession, WorkoutDay } from '@/types';
 
 interface HistoryPageProps {
   history: WorkoutSession[];
-  program: WorkoutDay[]; // Programı prop olarak aldık
+  program: WorkoutDay[];
   onBack: () => void; 
 }
 
 export function HistoryPage({ history, program, onBack }: HistoryPageProps) {
   
-  // DİNAMİK İSİM BULUCU: Programdaki güncel ismi getirir
-  const formatName = (id: string) => {
-    // Tüm günlerdeki tüm hareketleri tara ve ID'si eşleşeni bul
+  // 1. ADIM: ID'yi güncel isme çeviren yardımcı fonksiyon
+  const getNameFromId = (id: string) => {
     for (const day of program) {
       const exercise = day.exercises.find(ex => ex.id === id);
       if (exercise) return exercise.name;
     }
-    // Eğer programda bulunamazsa (silinmiş olabilir), ID'yi göster
     return id.toUpperCase();
   };
 
-  const exerciseNames = useMemo(() => {
+  // 2. ADIM: Tüm geçmişteki benzersiz İSİMLERİ topla (ID'leri değil)
+  const exerciseNamesList = useMemo(() => {
     const names = new Set<string>();
     history.forEach(session => {
       session.exercises.forEach(ex => {
-        if (ex.exerciseId) names.add(ex.exerciseId);
+        if (ex.exerciseId) {
+          names.add(getNameFromId(ex.exerciseId));
+        }
       });
     });
-    return Array.from(names);
-  }, [history]);
+    return Array.from(names).sort();
+  }, [history, program]);
 
-  const [selectedExercise, setSelectedExercise] = useState<string>(exerciseNames[0] || "");
+  const [selectedExerciseName, setSelectedExerciseName] = useState<string>(exerciseNamesList[0] || "");
 
+  // 3. ADIM: Seçili İSME sahip tüm kayıtları birleştir
   const exerciseHistory = useMemo(() => {
     const data: any[] = [];
     [...history].reverse().forEach(session => {
-      const foundExercise = session.exercises.find(ex => ex.exerciseId === selectedExercise);
+      // Bu oturumda seçili isme sahip HERHANGİ bir hareket var mı?
+      const foundExercise = session.exercises.find(ex => getNameFromId(ex.exerciseId) === selectedExerciseName);
+      
       if (foundExercise && foundExercise.sets.length > 0) {
         const lastSet = foundExercise.sets[foundExercise.sets.length - 1];
-        
         const duration = session.startTime && session.endTime 
           ? Math.floor((new Date(session.endTime).getTime() - new Date(session.startTime).getTime()) / 60000)
           : null;
@@ -57,7 +60,7 @@ export function HistoryPage({ history, program, onBack }: HistoryPageProps) {
       }
     });
     return data;
-  }, [history, selectedExercise]);
+  }, [history, selectedExerciseName, program]);
 
   const chartData = useMemo(() => {
     return [...exerciseHistory].reverse().map(d => ({
@@ -80,13 +83,13 @@ export function HistoryPage({ history, program, onBack }: HistoryPageProps) {
 
       <div className="relative">
         <select 
-          value={selectedExercise} 
-          onChange={(e) => setSelectedExercise(e.target.value)}
+          value={selectedExerciseName} 
+          onChange={(e) => setSelectedExerciseName(e.target.value)}
           className="w-full bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl h-14 px-4 text-[#10B981] font-bold appearance-none outline-none focus:border-[#10B981]"
         >
-          {exerciseNames.length > 0 ? (
-            exerciseNames.map(name => (
-              <option key={name} value={name}>{formatName(name)}</option>
+          {exerciseNamesList.length > 0 ? (
+            exerciseNamesList.map(name => (
+              <option key={name} value={name}>{name}</option>
             ))
           ) : (
             <option>Henüz Kayıt Yok</option>
@@ -113,7 +116,7 @@ export function HistoryPage({ history, program, onBack }: HistoryPageProps) {
       <div className="space-y-3">
         <div className="flex items-center gap-2 ml-1">
           <Target size={16} className="text-[#10B981]" />
-          <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Performans Özeti</h3>
+          <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Grup Performansı</h3>
         </div>
 
         {exerciseHistory.map((item, i) => (
