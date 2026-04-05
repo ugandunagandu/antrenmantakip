@@ -157,7 +157,7 @@ function App() {
   return (
     <HistoryPage 
       history={history} 
-      onBack={() => setView('home')} 
+      onBack={() => setView('home')} // BURASI KRİTİK: 'home' senin ana sayfanın adı olmalı
     />
   );
       
