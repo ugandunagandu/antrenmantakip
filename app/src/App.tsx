@@ -155,11 +155,7 @@ function App() {
       
       case 'history':
         return (
-          <HistoryPage
-            history={history}
-            program={program}
-            onBack={() => setCurrentView('home')}
-          />
+         <HistoryPage history={history} onBack={() => setView('home')} />
         );
       
       default:
