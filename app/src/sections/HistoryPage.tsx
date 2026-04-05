@@ -3,26 +3,28 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer 
 } from 'recharts';
 import { Card, CardContent } from '@/components/ui/card';
-import { ChevronLeft, Target } from 'lucide-react'; 
-import type { WorkoutSession } from '@/types';
+import { ChevronLeft, Target, Clock } from 'lucide-react'; 
+import type { WorkoutSession, WorkoutDay } from '@/types';
 
 interface HistoryPageProps {
   history: WorkoutSession[];
+  program: WorkoutDay[]; // Programı prop olarak aldık
   onBack: () => void; 
 }
 
-export function HistoryPage({ history, onBack }: HistoryPageProps) {
-  // Hareket ID'lerini isme çeviren sözlük
+export function HistoryPage({ history, program, onBack }: HistoryPageProps) {
+  
+  // DİNAMİK İSİM BULUCU: Programdaki güncel ismi getirir
   const formatName = (id: string) => {
-    const names: Record<string, string> = {
-      'd1e1': 'Bench Press', 'd1e2': 'Incline DB Press', 'd1e3': 'Cable Fly', 'd1e4': 'Triceps Pushdown', 'd1e5': 'Dips', 'd1e6': 'Lateral Raise',
-      'd2e1': 'Squat', 'd2e2': 'Leg Press', 'd2e3': 'Leg Extension', 'd2e4': 'Lying Leg Curl', 'd2e5': 'Calf Raise', 'd2e6': 'Deadlift / RDL',
-      'd3e1': 'Lat Pulldown', 'd3e2': 'Seated Row', 'd3e3': 'Face Pull', 'd3e4': 'Biceps Curl', 'd3e5': 'Hammer Curl', 'd3e6': 'Shrug'
-    };
-    return names[id] || id.toUpperCase();
+    // Tüm günlerdeki tüm hareketleri tara ve ID'si eşleşeni bul
+    for (const day of program) {
+      const exercise = day.exercises.find(ex => ex.id === id);
+      if (exercise) return exercise.name;
+    }
+    // Eğer programda bulunamazsa (silinmiş olabilir), ID'yi göster
+    return id.toUpperCase();
   };
 
-  // Geçmişteki tüm hareketleri bulur
   const exerciseNames = useMemo(() => {
     const names = new Set<string>();
     history.forEach(session => {
@@ -35,18 +37,22 @@ export function HistoryPage({ history, onBack }: HistoryPageProps) {
 
   const [selectedExercise, setSelectedExercise] = useState<string>(exerciseNames[0] || "");
 
-  // Seçili hareketin verilerini filtreler (Sadece SON SET)
   const exerciseHistory = useMemo(() => {
     const data: any[] = [];
     [...history].reverse().forEach(session => {
       const foundExercise = session.exercises.find(ex => ex.exerciseId === selectedExercise);
       if (foundExercise && foundExercise.sets.length > 0) {
-        // Dizideki en son seti alıyoruz
         const lastSet = foundExercise.sets[foundExercise.sets.length - 1];
+        
+        const duration = session.startTime && session.endTime 
+          ? Math.floor((new Date(session.endTime).getTime() - new Date(session.startTime).getTime()) / 60000)
+          : null;
+
         data.push({
           date: new Date(session.endTime).toLocaleDateString('tr-TR'),
           weight: lastSet.weight || 0,
-          reps: lastSet.lastRep || 0
+          reps: lastSet.lastRep || 0,
+          duration: duration
         });
       }
     });
@@ -62,7 +68,6 @@ export function HistoryPage({ history, onBack }: HistoryPageProps) {
 
   return (
     <div className="p-4 pb-24 space-y-6 bg-[#0F0F0F] min-h-screen text-white font-sans">
-      {/* GERİ TUŞU VE BAŞLIK */}
       <header className="flex items-center gap-4 py-2">
         <button 
           onClick={() => onBack()}
@@ -73,7 +78,6 @@ export function HistoryPage({ history, onBack }: HistoryPageProps) {
         <h1 className="text-2xl font-black uppercase italic tracking-tight text-[#10B981]">ANALİZ</h1>
       </header>
 
-      {/* SEÇİCİ */}
       <div className="relative">
         <select 
           value={selectedExercise} 
@@ -90,7 +94,6 @@ export function HistoryPage({ history, onBack }: HistoryPageProps) {
         </select>
       </div>
 
-      {/* GRAFİK */}
       {chartData.length > 0 && (
         <Card className="bg-[#1A1A1A] border-none rounded-3xl overflow-hidden shadow-2xl">
           <CardContent className="p-2 h-[220px] mt-4">
@@ -107,7 +110,6 @@ export function HistoryPage({ history, onBack }: HistoryPageProps) {
         </Card>
       )}
 
-      {/* SON SET LİSTESİ */}
       <div className="space-y-3">
         <div className="flex items-center gap-2 ml-1">
           <Target size={16} className="text-[#10B981]" />
@@ -115,15 +117,20 @@ export function HistoryPage({ history, onBack }: HistoryPageProps) {
         </div>
 
         {exerciseHistory.map((item, i) => (
-          <div key={i} className="bg-[#1A1A1A] border border-[#2A2A2A] rounded-2xl p-4 flex justify-between items-center">
+          <div key={i} className="bg-[#1A1A1A] border border-[#2A2A2A] rounded-2xl p-4 flex justify-between items-center relative overflow-hidden">
+             {item.duration && (
+              <div className="absolute top-0 right-0 bg-[#10B981]/10 text-[#10B981] text-[9px] font-black px-2 py-0.5 rounded-bl-lg border-l border-b border-[#10B981]/20 uppercase flex items-center gap-1">
+                <Clock size={10} /> {item.duration} DK
+              </div>
+            )}
             <div className="flex flex-col">
               <span className="text-[10px] text-gray-500 font-bold uppercase">Tarih</span>
               <span className="font-bold text-gray-200">{item.date}</span>
             </div>
             <div className="text-right">
               <span className="text-[10px] text-[#10B981] font-bold uppercase block mb-1">Son Set</span>
-              <div className="text-lg font-black text-white">
-                {item.weight}kg <span className="text-gray-600 mx-1">|</span> {item.reps} Tekrar
+              <div className="text-lg font-black text-white italic">
+                {item.weight}kg <span className="text-gray-600 mx-1">|</span> {item.reps}T
               </div>
             </div>
           </div>
