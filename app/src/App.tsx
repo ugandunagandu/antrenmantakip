@@ -152,12 +152,22 @@ function App() {
           />
         );
       
-     case 'history':
+   case 'history':
   return (
     <HistoryPage 
       history={history} 
-      program={program} // Mevcut programı da gönderiyoruz
+      program={program}
       onBack={() => setCurrentView('home')} 
+      onDeleteSession={(timestamp) => {
+        setHistory(prev => prev.filter(s => s.endTime !== timestamp));
+      }}
+      onUpdateSession={(updatedSession) => {
+        setHistory(prev => prev.map(s => s.endTime === updatedSession.endTime ? updatedSession : s));
+      }}
+      // TÜM GEÇMİŞİ SİLME FONKSİYONU
+      onClearAllHistory={() => {
+        setHistory([]);
+      }}
     />
   );
       
