@@ -1,9 +1,8 @@
 import { useState, useMemo } from 'react';
 import { 
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend 
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer 
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { WorkoutSession } from '@/types';
 
 interface HistoryPageProps {
@@ -11,12 +10,11 @@ interface HistoryPageProps {
 }
 
 export function HistoryPage({ history }: HistoryPageProps) {
-  // 1. Mevcut tüm benzersiz egzersiz isimlerini bul (Dropdown için)
+  // 1. Mevcut tüm benzersiz egzersiz isimlerini bul
   const exerciseNames = useMemo(() => {
     const names = new Set<string>();
     history.forEach(session => {
       session.exercises.forEach(ex => {
-        // Not: Programındaki isim neyse onu alır (Bench Press vb.)
         if (ex.exerciseId) names.add(ex.exerciseId);
       });
     });
@@ -32,7 +30,6 @@ export function HistoryPage({ history }: HistoryPageProps) {
     history.forEach(session => {
       session.exercises.forEach(exercise => {
         if (exercise.exerciseId === selectedExercise) {
-          // O hareketin en ağır (PR) setini veya ortalamasını alalım
           const maxWeight = Math.max(...exercise.sets.map(s => s.weight || 0));
           if (maxWeight > 0) {
             data.push({
@@ -52,22 +49,29 @@ export function HistoryPage({ history }: HistoryPageProps) {
       <header className="flex flex-col gap-2">
         <h1 className="text-3xl font-black uppercase italic tracking-tighter">Gelişim Analizi</h1>
         
-        {/* HAREKET SEÇİCİ DROPDOWN */}
+        {/* HAREKET SEÇİCİ (DÜZELTİLDİ: STANDART SELECT EKLENDİ) */}
         {exerciseNames.length > 0 && (
           <div className="mt-2">
             <label className="text-[10px] text-gray-500 font-bold uppercase ml-1">İzlenecek Hareket</label>
-            <Select value={selectedExercise} onValueChange={setSelectedExercise}>
-              <SelectTrigger className="w-full bg-[#1A1A1A] border-[#2A2A2A] rounded-xl h-12 text-[#10B981] font-bold">
-                <SelectValue placeholder="Hareket seçin" />
-              </SelectTrigger>
-              <SelectContent className="bg-[#1A1A1A] border-[#2A2A2A] text-white">
+            <div className="relative">
+              <select 
+                value={selectedExercise} 
+                onChange={(e) => setSelectedExercise(e.target.value)}
+                className="w-full bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl h-12 px-4 text-[#10B981] font-bold focus:outline-none focus:border-[#10B981] appearance-none"
+              >
                 {exerciseNames.map(name => (
-                  <SelectItem key={name} value={name} className="focus:bg-[#10B981] focus:text-black">
+                  <option key={name} value={name} className="bg-[#1A1A1A] text-white">
                     {name}
-                  </SelectItem>
+                  </option>
                 ))}
-              </SelectContent>
-            </Select>
+              </select>
+              {/* Sağ taraftaki küçük ok işareti */}
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-[#10B981]">
+                <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                  <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
+                </svg>
+              </div>
+            </div>
           </div>
         )}
       </header>
@@ -131,7 +135,7 @@ export function HistoryPage({ history }: HistoryPageProps) {
                     <div className="flex gap-1">
                       {ex.sets.map((set, sIdx) => (
                         <span key={sIdx} className="text-[10px] bg-[#0F0F0F] border border-[#2A2A2A] px-1.5 py-0.5 rounded">
-                          {set.weight}x{set.lastRep || '?' }
+                          {set.weight}x{set.lastRep || '?'}
                         </span>
                       ))}
                     </div>
