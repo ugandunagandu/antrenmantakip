@@ -152,14 +152,14 @@ function App() {
           />
         );
       
-      case 'history':
-        return (
-          <HistoryPage 
-            history={history} 
-            // DÜZELTİLDİ: setView yerine setCurrentView kullanıldı
-            onBack={() => setCurrentView('home')} 
-          />
-        );
+     case 'history':
+  return (
+    <HistoryPage 
+      history={history} 
+      program={program} // Mevcut programı da gönderiyoruz
+      onBack={() => setCurrentView('home')} 
+    />
+  );
       
       default:
         return null;
