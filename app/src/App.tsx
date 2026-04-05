@@ -154,9 +154,12 @@ function App() {
         );
       
       case 'history':
-        return (
-         <HistoryPage history={history} onBack={() => setView('home')} />
-        );
+  return (
+    <HistoryPage 
+      history={history} 
+      onBack={() => setView('home')} 
+    />
+  );
       
       default:
         return null;
