@@ -2,14 +2,11 @@ import { useState, useEffect, useRef } from 'react';
 import { 
   ChevronLeft, 
   Check, 
-  Play, 
-  Pause, 
-  SkipForward,
-  Flag
+  Flag,
+  Clock
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Progress } from '@/components/ui/progress';
 import type { WorkoutDay, ExerciseProgress } from '@/types';
 import { playCountdownBeeps, initAudioContext } from '@/utils/sound';
 
@@ -32,7 +29,6 @@ export function WorkoutPage({ day, onFinish, onBack }: WorkoutPageProps) {
   
   const [restTime, setRestTime] = useState(0);
   const [isResting, setIsResting] = useState(false);
-  const [restDuration, setRestDuration] = useState(0);
   const [waitingForRestSelection, setWaitingForRestSelection] = useState(false);
   
   const restIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -112,7 +108,6 @@ export function WorkoutPage({ day, onFinish, onBack }: WorkoutPageProps) {
 
   const startRest = (seconds: number) => {
     initAudioContext();
-    setRestDuration(seconds);
     setRestTime(seconds);
     setIsResting(true);
     setWaitingForRestSelection(false);
@@ -152,7 +147,6 @@ export function WorkoutPage({ day, onFinish, onBack }: WorkoutPageProps) {
 
   return (
     <div className="min-h-screen bg-[#0F0F0F] flex flex-col text-white">
-      {/* ÜST MENÜ - BİTİR BUTONU BURAYA EKLENDİ */}
       <header className="px-4 py-4 border-b border-[#2A2A2A] flex items-center justify-between sticky top-0 bg-[#0F0F0F]/80 backdrop-blur-md z-10">
         <Button variant="ghost" size="sm" onClick={onBack} className="text-gray-400">
           <ChevronLeft className="w-5 h-5 mr-1" /> İptal
@@ -178,7 +172,6 @@ export function WorkoutPage({ day, onFinish, onBack }: WorkoutPageProps) {
           <p className="text-[#10B981] font-bold">{currentExerciseIndex + 1} / {day.exercises.length} HAREKET</p>
         </div>
 
-        {/* SET LİSTESİ */}
         <div className="max-w-md mx-auto space-y-4 mb-10">
           {currentProgress?.sets.map((set, index) => {
             const isCurrent = index === getCompletedSetsCount() && !isResting && !waitingForRestSelection;
@@ -222,13 +215,16 @@ export function WorkoutPage({ day, onFinish, onBack }: WorkoutPageProps) {
           })}
         </div>
 
-        {/* DİNLENME SEÇİMİ VE ZAMANLAYICI (AYNI KALDI) */}
+        {/* DİNLENME SEÇİMİ - 180S EKLENDİ VE GRID DÜZENLENDİ */}
         {waitingForRestSelection && (
-          <div className="max-w-md mx-auto bg-[#1A1A1A] border-2 border-orange-500 rounded-3xl p-6 mb-8 animate-in zoom-in-95">
-            <h3 className="text-center font-black text-orange-500 mb-4 uppercase text-sm">DİNLENME SÜRESİ</h3>
-            <div className="grid grid-cols-3 gap-3">
-              {[60, 90, 120].map((sec) => (
-                <Button key={sec} onClick={() => startRest(sec)} className="h-16 rounded-2xl bg-zinc-800 font-black text-xl">
+          <div className="max-w-md mx-auto bg-[#1A1A1A] border-2 border-[#10B981] rounded-3xl p-6 mb-8 animate-in zoom-in-95">
+            <div className="flex items-center justify-center gap-2 mb-4 text-[#10B981]">
+                <Clock className="w-4 h-4" />
+                <h3 className="font-black uppercase text-sm">Dinlenme Süresi Seç</h3>
+            </div>
+            <div className="grid grid-cols-4 gap-2">
+              {[60, 90, 120, 180].map((sec) => (
+                <Button key={sec} onClick={() => startRest(sec)} className="h-14 rounded-xl bg-zinc-800 hover:bg-[#10B981] hover:text-black font-black text-lg transition-colors">
                   {sec}s
                 </Button>
               ))}
@@ -237,28 +233,27 @@ export function WorkoutPage({ day, onFinish, onBack }: WorkoutPageProps) {
         )}
 
         {isResting && (
-          <div className="max-w-md mx-auto bg-[#10B981] rounded-3xl p-6 mb-8 text-black text-center">
+          <div className="max-w-md mx-auto bg-[#10B981] rounded-3xl p-6 mb-8 text-black text-center shadow-lg shadow-[#10B981]/20">
+            <p className="text-[10px] font-black uppercase mb-1 opacity-70">Dinleniyorsun...</p>
             <h3 className="text-5xl font-mono font-black mb-4">{formatTime(restTime)}</h3>
-            <Button onClick={() => setIsResting(false)} className="bg-black text-white rounded-full px-6 font-bold">
+            <Button onClick={() => setIsResting(false)} className="bg-black text-white rounded-full px-8 font-bold hover:bg-zinc-900">
               ATLA
             </Button>
           </div>
         )}
 
-       {/* SETİ TAMAMLA BUTONU - MERKEZLENMİŞ HALİ */}
-{getNextSet() && !isResting && !waitingForRestSelection && (
-  <div className="max-w-md mx-auto w-full flex justify-center mt-4">
-    <Button 
-      onClick={completeSet} 
-      className="w-full h-16 bg-[#10B981] hover:bg-[#059669] rounded-2xl text-xl font-black uppercase shadow-lg shadow-[#10B981]/20 transition-transform active:scale-95"
-    >
-      SETİ TAMAMLA
-    </Button>
-  </div>
-)}
+        {getNextSet() && !isResting && !waitingForRestSelection && (
+          <div className="max-w-md mx-auto w-full flex justify-center mt-4">
+            <Button 
+              onClick={completeSet} 
+              className="w-full h-16 bg-[#10B981] hover:bg-[#059669] rounded-2xl text-xl font-black uppercase shadow-lg shadow-[#10B981]/20 transition-transform active:scale-95"
+            >
+              SETİ TAMAMLA
+            </Button>
+          </div>
+        )}
       </main>
 
-      {/* ALT MENÜ - SADECE HAREKETLER ARASI GEÇİŞ */}
       <footer className="fixed bottom-0 left-0 right-0 p-4 bg-[#0F0F0F]/90 backdrop-blur-lg border-t border-[#2A2A2A] z-20">
         <div className="max-w-md mx-auto flex gap-3">
           <Button 
