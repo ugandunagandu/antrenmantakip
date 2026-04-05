@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { HomePage } from '@/sections/HomePage';
 import { WorkoutPage } from '@/sections/WorkoutPage';
 import { EditPage } from '@/sections/EditPage';
@@ -67,14 +67,14 @@ function App() {
     setCurrentView('workout');
   };
 
- const handleFinishWorkout = (session: WorkoutSession) => {
-  setHistory(prev => [...prev, session]); // Geçmişe yeni seansı ekliyor
-  toast.success('Antrenman tamamlandı!', {
-    description: 'Harika iş çıkardın! 💪',
-  });
-  setCurrentView('home');
-  setSelectedDayId(null);
-};
+  const handleFinishWorkout = (session: WorkoutSession) => {
+    setHistory(prev => [...prev, session]);
+    toast.success('Antrenman tamamlandı!', {
+      description: 'Harika iş çıkardın! 💪',
+    });
+    setCurrentView('home');
+    setSelectedDayId(null);
+  };
 
   const handleSaveProgram = (newProgram: WorkoutDay[]) => {
     setProgram(newProgram);
@@ -104,7 +104,6 @@ function App() {
               onSelectDay={handleSelectDay}
               onNavigate={handleNavigate}
             />
-            {/* Yedekleme Butonları Alt Kısma Eklendi */}
             <div className="fixed bottom-4 left-0 right-0 flex justify-center gap-4 px-4 pointer-events-none">
                <button 
                 onClick={exportData}
@@ -154,12 +153,13 @@ function App() {
         );
       
       case 'history':
-  return (
-    <HistoryPage 
-      history={history} 
-      onBack={() => setView('home')} // BURASI KRİTİK: 'home' senin ana sayfanın adı olmalı
-    />
-  );
+        return (
+          <HistoryPage 
+            history={history} 
+            // DÜZELTİLDİ: setView yerine setCurrentView kullanıldı
+            onBack={() => setCurrentView('home')} 
+          />
+        );
       
       default:
         return null;
