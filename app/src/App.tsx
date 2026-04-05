@@ -67,14 +67,14 @@ function App() {
     setCurrentView('workout');
   };
 
-  const handleFinishWorkout = (session: WorkoutSession) => {
-    setHistory(prev => [...prev, session]);
-    toast.success('Antrenman tamamlandı!', {
-      description: 'Harika iş çıkardın! 💪',
-    });
-    setCurrentView('home');
-    setSelectedDayId(null);
-  };
+ const handleFinishWorkout = (session: WorkoutSession) => {
+  setHistory(prev => [...prev, session]); // Geçmişe yeni seansı ekliyor
+  toast.success('Antrenman tamamlandı!', {
+    description: 'Harika iş çıkardın! 💪',
+  });
+  setCurrentView('home');
+  setSelectedDayId(null);
+};
 
   const handleSaveProgram = (newProgram: WorkoutDay[]) => {
     setProgram(newProgram);
