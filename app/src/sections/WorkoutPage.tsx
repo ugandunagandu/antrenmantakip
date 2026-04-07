@@ -22,7 +22,7 @@ interface WorkoutPageProps {
 }
 
 export function WorkoutPage({ day, onFinish, onBack }: WorkoutPageProps) {
-  const [isRunning, setIsRunning] = useState(true);
+  // --- STATE VE REF TANIMLARI ---
   const [elapsedTime, setElapsedTime] = useState(0);
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
   const [exerciseProgress, setExerciseProgress] = useState<ExerciseProgress[]>([]);
@@ -31,10 +31,12 @@ export function WorkoutPage({ day, onFinish, onBack }: WorkoutPageProps) {
   const [isResting, setIsResting] = useState(false);
   const [waitingForRestSelection, setWaitingForRestSelection] = useState(false);
   
-  const restIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Zaman damgalarını tutacak Ref'ler (Ekran kapansa da bunlar değişmez)
+  const workoutStartTimeRef = useRef<number>(Date.now());
+  const restEndTimeRef = useRef<number | null>(null);
   const countdownTriggeredRef = useRef(false);
 
-  // Başlangıç verilerini hazırla
+  // 1. Antrenman Başlangıç Verilerini Hazırla
   useEffect(() => {
     const initialProgress = day.exercises.map(ex => ({
       exerciseId: ex.id,
@@ -46,41 +48,50 @@ export function WorkoutPage({ day, onFinish, onBack }: WorkoutPageProps) {
       })),
     }));
     setExerciseProgress(initialProgress);
+    workoutStartTimeRef.current = Date.now(); // Antrenman tam şu an başladı
   }, [day]);
 
-  // Antrenman süresini say
+  // 2. ANTRENMAN SÜRESİ (TIMESTAMP MANTIĞI)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = Date.now();
+      const diffInSeconds = Math.floor((now - workoutStartTimeRef.current) / 1000);
+      setElapsedTime(diffInSeconds);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // 3. DİNLENME SÜRESİ (TIMESTAMP MANTIĞI)
   useEffect(() => {
     let interval: ReturnType<typeof setInterval>;
-    if (isRunning) {
+
+    if (isResting && restEndTimeRef.current) {
       interval = setInterval(() => {
-        setElapsedTime(prev => prev + 1);
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [isRunning]);
+        const now = Date.now();
+        const remaining = Math.max(0, Math.ceil((restEndTimeRef.current! - now) / 1000));
+        
+        setRestTime(remaining);
 
-  // Dinlenme süresini yönet
-  useEffect(() => {
-    if (isResting && restTime > 0) {
-      restIntervalRef.current = setInterval(() => {
-        setRestTime(prev => {
-          const newTime = prev - 1;
-          if (newTime <= 3 && newTime > 0 && !countdownTriggeredRef.current) {
-            countdownTriggeredRef.current = true;
-            playCountdownBeeps();
-          }
-          if (newTime <= 0) {
-            setIsResting(false);
-            countdownTriggeredRef.current = false;
-            return 0;
-          }
-          return newTime;
-        });
-      }, 1000);
-    }
-    return () => { if (restIntervalRef.current) clearInterval(restIntervalRef.current); };
-  }, [isResting, restTime]);
+        // Bip sesi kontrolü (Son 3 saniye)
+        if (remaining <= 3 && remaining > 0 && !countdownTriggeredRef.current) {
+          countdownTriggeredRef.current = true;
+          playCountdownBeeps();
+        }
 
+        if (remaining <= 0) {
+          setIsResting(false);
+          restEndTimeRef.current = null;
+          countdownTriggeredRef.current = false;
+          clearInterval(interval);
+        }
+      }, 500); // Daha akıcı kontrol için 500ms
+    }
+
+    return () => { if (interval) clearInterval(interval); };
+  }, [isResting]);
+
+  // --- YARDIMCI FONKSİYONLAR ---
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -88,30 +99,30 @@ export function WorkoutPage({ day, onFinish, onBack }: WorkoutPageProps) {
   };
 
   const handleFinish = () => {
-    const endTime = Date.now();
-    const startTime = Date.now() - elapsedTime * 1000;
-    
     onFinish({ 
       dayId: day.id, 
-      startTime, 
-      endTime, 
+      startTime: workoutStartTimeRef.current, 
+      endTime: Date.now(), 
       exercises: exerciseProgress 
     });
   };
 
-  const currentExercise = day.exercises[currentExerciseIndex];
-  const currentProgress = exerciseProgress[currentExerciseIndex];
-  
-  const getNextSet = () => currentProgress?.sets.find(s => !s.completed);
-  const getCompletedSetsCount = () => currentProgress?.sets.filter(s => s.completed).length || 0;
-  const isLastSet = (setNumber: number) => setNumber === currentExercise?.sets;
-
   const startRest = (seconds: number) => {
     initAudioContext();
+    const now = Date.now();
+    restEndTimeRef.current = now + (seconds * 1000); // Bitiş vaktini belirle
     setRestTime(seconds);
     setIsResting(true);
     setWaitingForRestSelection(false);
+    countdownTriggeredRef.current = false;
   };
+
+  // Diğer fonksiyonlar (completeSet, updateSetWeight vb.) aynı kalıyor
+  const currentExercise = day.exercises[currentExerciseIndex];
+  const currentProgress = exerciseProgress[currentExerciseIndex];
+  const getNextSet = () => currentProgress?.sets.find(s => !s.completed);
+  const getCompletedSetsCount = () => currentProgress?.sets.filter(s => s.completed).length || 0;
+  const isLastSet = (setNumber: number) => setNumber === currentExercise?.sets;
 
   const completeSet = () => {
     if (!currentProgress) return;
@@ -147,6 +158,7 @@ export function WorkoutPage({ day, onFinish, onBack }: WorkoutPageProps) {
 
   return (
     <div className="min-h-screen bg-[#0F0F0F] flex flex-col text-white">
+      {/* HEADER */}
       <header className="px-4 py-4 border-b border-[#2A2A2A] flex items-center justify-between sticky top-0 bg-[#0F0F0F]/80 backdrop-blur-md z-10">
         <Button variant="ghost" size="sm" onClick={onBack} className="text-gray-400">
           <ChevronLeft className="w-5 h-5 mr-1" /> İptal
@@ -166,12 +178,14 @@ export function WorkoutPage({ day, onFinish, onBack }: WorkoutPageProps) {
         </div>
       </header>
 
+      {/* MAIN CONTENT */}
       <main className="flex-1 px-4 py-6 overflow-auto pb-32">
         <div className="text-center mb-8">
           <h2 className="text-3xl font-black uppercase tracking-tight mb-1">{currentExercise?.name}</h2>
           <p className="text-[#10B981] font-bold">{currentExerciseIndex + 1} / {day.exercises.length} HAREKET</p>
         </div>
 
+        {/* SET LİSTESİ */}
         <div className="max-w-md mx-auto space-y-4 mb-10">
           {currentProgress?.sets.map((set, index) => {
             const isCurrent = index === getCompletedSetsCount() && !isResting && !waitingForRestSelection;
@@ -215,7 +229,7 @@ export function WorkoutPage({ day, onFinish, onBack }: WorkoutPageProps) {
           })}
         </div>
 
-        {/* DİNLENME SEÇİMİ - 180S EKLENDİ VE GRID DÜZENLENDİ */}
+        {/* DİNLENME SEÇİMİ */}
         {waitingForRestSelection && (
           <div className="max-w-md mx-auto bg-[#1A1A1A] border-2 border-[#10B981] rounded-3xl p-6 mb-8 animate-in zoom-in-95">
             <div className="flex items-center justify-center gap-2 mb-4 text-[#10B981]">
@@ -232,6 +246,7 @@ export function WorkoutPage({ day, onFinish, onBack }: WorkoutPageProps) {
           </div>
         )}
 
+        {/* DİNLENME EKRANI */}
         {isResting && (
           <div className="max-w-md mx-auto bg-[#10B981] rounded-3xl p-6 mb-8 text-black text-center shadow-lg shadow-[#10B981]/20">
             <p className="text-[10px] font-black uppercase mb-1 opacity-70">Dinleniyorsun...</p>
@@ -242,6 +257,7 @@ export function WorkoutPage({ day, onFinish, onBack }: WorkoutPageProps) {
           </div>
         )}
 
+        {/* SETİ TAMAMLA BUTONU */}
         {getNextSet() && !isResting && !waitingForRestSelection && (
           <div className="max-w-md mx-auto w-full flex justify-center mt-4">
             <Button 
@@ -254,6 +270,7 @@ export function WorkoutPage({ day, onFinish, onBack }: WorkoutPageProps) {
         )}
       </main>
 
+      {/* FOOTER */}
       <footer className="fixed bottom-0 left-0 right-0 p-4 bg-[#0F0F0F]/90 backdrop-blur-lg border-t border-[#2A2A2A] z-20">
         <div className="max-w-md mx-auto flex gap-3">
           <Button 
